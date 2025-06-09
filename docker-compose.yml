@@ -1,0 +1,66 @@
+services:
+  db:
+    ports:
+      - 5432:5432
+    image: postgres:latest
+    environment:
+      - POSTGRES_DB=db
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - TZ=Asia/Jakarta
+    volumes:
+      - ./docker-dev-volumes/pg_data:/var/lib/postgresql/data  # Persist PostgreSQL data
+      - ./db/init:/docker-entrypoint-initdb.d  # Mounts init scripts
+  be:
+    tty: true
+    depends_on:
+      - db
+    volumes:
+      - ./be/app:/var/www
+      - ./be/storage_ftp:/var/storage_ftp
+      - ./be/app/public:/var/www/html
+    command: bash -c "chown www-data:www-data -R /var/www/storage  && apache2-foreground"
+    build:
+      context: be
+      dockerfile: local.Dockerfile
+    ports:
+      - 2002:80
+  fe:
+    build:
+      context: fe
+      dockerfile: local.Dockerfile
+    ports:
+      - 2011:5173
+    tty: true
+    volumes:
+      - ./fe/app:/app
+    depends_on :
+      - db 
+   
+  # sftp:
+  #   image: atmoz/sftp
+  #   container_name: sftp-server
+  #   ports:
+  #     - "2222:22"  # SFTP port
+  #   volumes:
+  #     - ./be/storage_ftp:/home/ftpuser/upload
+  #   command: ftpuser:ftppass:::upload  # format: user:pass:uid:gid:folder
+
+  sftp:
+    image: drakkan/sftpgo:latest
+    container_name: sftpgo
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      - SFTPGO_WEBDAVD__BINDINGS__0__PORT=8080
+      - SFTPGO_HTTPD__BINDINGS__0__PORT=8081
+      - SFTPGO_DATA_PROVIDER__CREATE_DEFAULT_ADMIN=true
+      - SFTPGO_DEFAULT_ADMIN_USERNAME=admin
+      - SFTPGO_DEFAULT_ADMIN_PASSWORD=admin1
+    ports:
+      - "2022:2022"   # SFTP
+      - "8081:8081"   # REST API
+    volumes:
+      - ./docker-dev-volumes/sftpgo_data:/storage_data
+      

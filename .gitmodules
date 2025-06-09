@@ -1,0 +1,12 @@
+[submodule "fe"]
+	path = fe
+	url = https://github.com/koharudin/datahub-fe.git
+	branch = main
+[submodule "be"]
+	path = be
+	url = https://github.com/koharudin/datahub-be.git
+	branch = main
+[submodule "dataverse"]
+	path = dataverse
+	url = https://github.com/koharudin/dataverse-docker.git
+	branch = master
